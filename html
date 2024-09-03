@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speech-to-Text</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.3.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 style="font-size: 50px; font-style: italic;">Speech-to-Text - Finvest Rudra</h1>
+        </div>
+        <div class="controls">
+            <select id="languageSelector">
+                <option value="en-UK">English (UK)</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="kn-IN">Kannada</option>
+            </select>
+            <button id="startRecording">Start Recording</button>
+            <button id="stopRecording" disabled>Stop Recording</button>
+            <button id="clearText">Clear Text</button>
+            <button id="saveText">Save Text</button>
+            <button id="exportPDF">Export PDF</button>
+            <span id="loadingIndicator" style="display:none;">Recording...</span>
+        </div>
+        <div class="result">
+            <p style="font-style: italic;font-size:30px ;">Converted Text</p>
+            <div id="recognizedText"></div>
+        </div>
+    </div>
+
+    <script>
+        let recognizer;
+        let audioChunks = [];
+
+        document.getElementById("startRecording").addEventListener("click", startRecording);
+        document.getElementById("stopRecording").addEventListener("click", stopRecording);
+        document.getElementById("clearText").addEventListener("click", clearText);
+        document.getElementById("saveText").addEventListener("click", saveText);
+        document.getElementById("exportPDF").addEventListener("click", exportPDF);
+        
+        async function startRecording() {
+            try {
+                const selectedLanguage = document.getElementById("languageSelector").value;
+                recognizer = new window.webkitSpeechRecognition();
+                recognizer.lang = selectedLanguage;
+
+                recognizer.onstart = () => {
+                    console.log("Recording started...");
+                    document.getElementById("loadingIndicator").style.display = "inline";
+                };
+
+                recognizer.onresult = (event) => {
+                    const speechResult = event.results[0][0].transcript;
+                    document.getElementById("recognizedText").innerText = speechResult;
+                };
+
+                recognizer.onend = () => {
+                    console.log("Recording ended...");
+                    document.getElementById("loadingIndicator").style.display = "none";
+                };
+
+                recognizer.start();
+                document.getElementById("startRecording").disabled = true;
+                document.getElementById("stopRecording").disabled = false;
+            } catch (error) {
+                console.error("Error starting recording:", error);
+            }
+        }
+
+        function stopRecording() {
+            if (recognizer) {
+                recognizer.stop();
+                document.getElementById("startRecording").disabled = false;
+                document.getElementById("stopRecording").disabled = true;
+            }
+        }
+
+        function clearText() {
+            document.getElementById("recognizedText").innerText = "";
+        }
+
+        function saveText() {
+            const text = document.getElementById("recognizedText").innerText;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const anchor = document.createElement('a');
+            anchor.download = 'transcription.txt';
+            anchor.href = window.URL.createObjectURL(blob);
+            anchor.click();
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const text = document.getElementById("recognizedText").innerText;
+
+            doc.text(text, 10, 10);
+            doc.save('transcription.pdf');
+        } 
+    </script>
+</body>
+</html>
